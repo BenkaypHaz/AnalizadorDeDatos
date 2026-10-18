@@ -1,0 +1,19 @@
+name: analizador-datos
+
+services:
+  web:
+    build: .
+    image: analizador-datos:1.0
+    container_name: analizador-datos
+    ports:
+      - "8000:8000"
+    environment:
+      DJANGO_DEBUG: "0"
+      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,0.0.0.0"
+      DJANGO_SECRET_KEY: "cambie-esta-clave-en-produccion"
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 256M
+    restart: unless-stopped

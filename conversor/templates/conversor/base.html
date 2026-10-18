@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titulo %}Analizador de representación de datos{% endblock %}</title>
+  <style>
+    :root {
+      --papel: #f4f2ec; --tinta: #1b1b1b; --gris: #6b6862; --linea: #cfcbc0;
+      --acento: #b4441c; --relleno: #d9d5ca;
+      --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+      --mono: "Cascadia Mono", "SF Mono", Consolas, "Liberation Mono", monospace;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--papel); color: var(--tinta); font: 16px/1.55 var(--serif); }
+    .hoja { max-width: 880px; margin: 0 auto; padding: 2.5rem 1.25rem 4rem; }
+
+    header { border-bottom: 2px solid var(--tinta); padding-bottom: 1rem; margin-bottom: 2.5rem; }
+    .rotulo { font: 12px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--gris); display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+    h1 { font-size: clamp(1.9rem, 4.5vw, 2.6rem); font-weight: 600; line-height: 1.1; margin: .9rem 0 .4rem; letter-spacing: -.01em; }
+    header p { margin: 0; color: var(--gris); max-width: 60ch; }
+
+    section { margin-bottom: 3.5rem; }
+    .titulo-seccion { display: flex; align-items: baseline; gap: .9rem; border-bottom: 1px solid var(--tinta); padding-bottom: .4rem; margin-bottom: .8rem; }
+    .titulo-seccion .num { font: 13px var(--mono); color: var(--acento); }
+    h2 { font-size: 1.35rem; font-weight: 600; margin: 0; }
+    .ayuda { color: var(--gris); margin: 0 0 1.4rem; font-size: .95rem; }
+
+    form { display: grid; grid-template-columns: 1fr auto auto; gap: 1rem; align-items: end; }
+    @media (max-width: 620px) { form { grid-template-columns: 1fr; } }
+    .campo label { display: block; font: 11px var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--gris); margin-bottom: .3rem; }
+    input, select { width: 100%; font: 1.05rem var(--mono); color: var(--tinta); background: transparent; border: 0; border-bottom: 1.5px solid var(--tinta); border-radius: 0; padding: .45rem .1rem; }
+    select { cursor: pointer; padding-right: 1rem; }
+    input:focus, select:focus { outline: none; border-bottom-color: var(--acento); background: #ebe8df; }
+    input::placeholder { color: #a6a296; }
+    button { font: 13px var(--mono); text-transform: uppercase; letter-spacing: .08em; background: var(--tinta); color: var(--papel); border: 1.5px solid var(--tinta); border-radius: 0; padding: .7rem 1.3rem; cursor: pointer; }
+    button:hover { background: var(--acento); border-color: var(--acento); }
+
+    .errores { grid-column: 1 / -1; list-style: none; margin: 0; padding: .6rem .8rem; border-left: 3px solid var(--acento); background: #efe3dc; color: #7a2a0e; font-size: .95rem; }
+    .errores li::before { content: "Error · "; font: 12px var(--mono); text-transform: uppercase; letter-spacing: .06em; }
+
+    .resultado { margin-top: 2rem; }
+    dl.valores { display: grid; grid-template-columns: max-content 1fr; margin: 0; border-top: 1px solid var(--linea); }
+    dl.valores dt, dl.valores dd { margin: 0; padding: .55rem 0; border-bottom: 1px solid var(--linea); }
+    dl.valores dt { font: 12px/1.9 var(--mono); text-transform: uppercase; letter-spacing: .06em; color: var(--gris); padding-right: 2rem; }
+    dl.valores dd { font: 1.1rem var(--mono); word-break: break-all; }
+    dl.valores sub { font-size: .7em; color: var(--gris); }
+
+    .bits { display: flex; flex-wrap: wrap; gap: 1.25rem; margin: 1.6rem 0 .6rem; }
+    .byte { display: flex; flex-direction: column; gap: .3rem; }
+    .byte small { font: 11px var(--mono); color: var(--gris); }
+    .byte .celdas { display: flex; }
+    .bit { width: 1.75rem; height: 2.1rem; display: grid; place-items: center; font: 1rem var(--mono); border: 1px solid var(--tinta); margin-left: -1px; background: #fbfaf6; }
+    .bit.relleno { color: #9a968b; background: var(--relleno); }
+    .leyenda { font-size: .9rem; color: var(--gris); margin: 0; }
+    .leyenda .muestra { display: inline-block; width: .8rem; height: .8rem; background: var(--relleno); border: 1px solid var(--tinta); vertical-align: -1px; margin-right: .25rem; }
+    .cifras { display: flex; gap: 2.5rem; flex-wrap: wrap; margin-top: 1.4rem; }
+    .cifra strong { display: block; font: 2rem/1 var(--mono); }
+    .cifra span { font: 11px var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--gris); }
+
+    .tabla-scroll { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: .95rem; }
+    th, td { text-align: left; padding: .5rem .9rem .5rem 0; border-bottom: 1px solid var(--linea); white-space: nowrap; }
+    thead th { font: 11px var(--mono); text-transform: uppercase; letter-spacing: .06em; color: var(--gris); border-bottom: 1px solid var(--tinta); }
+    td { font-family: var(--mono); }
+    td.car { font: 1.35rem var(--serif); }
+    td.car small { font: 11px var(--mono); color: var(--gris); }
+    tr.multibyte td.nb { color: var(--acento); font-weight: 700; }
+    .nota { font-size: .9rem; color: var(--gris); margin-top: .9rem; }
+
+    footer { border-top: 1px solid var(--tinta); padding-top: .8rem; font: 12px var(--mono); color: var(--gris); display: flex; justify-content: space-between; flex-wrap: wrap; gap: .5rem; }
+  </style>
+</head>
+<body>
+  <div class="hoja">
+    <header>
+      <div class="rotulo"><span>Sistemas numéricos · Unicode · Contenedores</span><span>Rango 0 – 65 535</span></div>
+      <h1>Analizador de representación de datos</h1>
+      <p>Cómo se ve un mismo valor en distintas bases, cuántos bytes ocupa en memoria y cómo UTF-8 codifica cada carácter.</p>
+    </header>
+    {% block contenido %}{% endblock %}
+    <footer><span>Python 3.12 · Django</span><span>Ejecutándose en un contenedor Docker</span></footer>
+  </div>
+</body>
+</html>

@@ -1,0 +1,100 @@
+{% extends "conversor/base.html" %}
+
+{% block contenido %}
+<section id="numeros">
+  <div class="titulo-seccion"><span class="num">01</span><h2>Conversión entre bases</h2></div>
+  <p class="ayuda">Un entero entre 0 y 65 535 en base 2, 8, 10 o 16. Los prefijos 0b, 0o y 0x son opcionales.</p>
+
+  <form method="post" action="#numeros" novalidate>
+    {% csrf_token %}
+    <input type="hidden" name="accion" value="numero">
+    {% if form_numero.errors %}
+      <ul class="errores" role="alert">
+        {% for campo in form_numero %}{% for error in campo.errors %}<li>{{ error }}</li>{% endfor %}{% endfor %}
+        {% for error in form_numero.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+      </ul>
+    {% endif %}
+    <div class="campo">
+      <label for="{{ form_numero.numero.id_for_label }}">{{ form_numero.numero.label }}</label>
+      {{ form_numero.numero }}
+    </div>
+    <div class="campo">
+      <label for="{{ form_numero.base.id_for_label }}">{{ form_numero.base.label }}</label>
+      {{ form_numero.base }}
+    </div>
+    <button type="submit">Convertir</button>
+  </form>
+
+  {% if resultado %}
+  <div class="resultado" aria-live="polite">
+    <dl class="valores">
+      <dt>Decimal</dt><dd>{{ resultado.decimal }}<sub>10</sub></dd>
+      <dt>Binario</dt><dd>{{ resultado.binario_agrupado }}<sub>2</sub></dd>
+      <dt>Octal</dt><dd>{{ resultado.octal }}<sub>8</sub></dd>
+      <dt>Hexadecimal</dt><dd>{{ resultado.hexadecimal }}<sub>16</sub></dd>
+    </dl>
+
+    <div class="bits" aria-label="Bits en memoria">
+      {% for byte in resultado.bytes_detalle %}
+      <div class="byte">
+        <small>byte {{ forloop.counter }}</small>
+        <div class="celdas">{% for bit, relleno in byte %}<span class="bit{% if relleno %} relleno{% endif %}">{{ bit }}</span>{% endfor %}</div>
+      </div>
+      {% endfor %}
+    </div>
+    <p class="leyenda"><span class="muestra"></span>ceros de relleno hasta completar {{ resultado.bits_totales }} bits</p>
+
+    <div class="cifras">
+      <div class="cifra"><strong>{{ resultado.bits_significativos }}</strong><span>bits significativos</span></div>
+      <div class="cifra"><strong>{{ resultado.bytes_necesarios }}</strong><span>byte{{ resultado.bytes_necesarios|pluralize }} necesario{{ resultado.bytes_necesarios|pluralize }}</span></div>
+      <div class="cifra"><strong>{{ resultado.bits_relleno }}</strong><span>bits de relleno</span></div>
+    </div>
+  </div>
+  {% endif %}
+</section>
+
+<section id="texto">
+  <div class="titulo-seccion"><span class="num">02</span><h2>Caracteres y UTF-8</h2></div>
+  <p class="ayuda">Hasta 20 caracteres. Pruebe con letras acentuadas, la ñ, el símbolo € o un emoji.</p>
+
+  <form method="post" action="#texto" novalidate>
+    {% csrf_token %}
+    <input type="hidden" name="accion" value="texto">
+    {% if form_texto.errors %}
+      <ul class="errores" role="alert">
+        {% for error in form_texto.texto.errors %}<li>{{ error }}</li>{% endfor %}
+      </ul>
+    {% endif %}
+    <div class="campo" style="grid-column: span 2">
+      <label for="{{ form_texto.texto.id_for_label }}">{{ form_texto.texto.label }}</label>
+      {{ form_texto.texto }}
+    </div>
+    <button type="submit">Analizar</button>
+  </form>
+
+  {% if analisis %}
+  <div class="resultado tabla-scroll" aria-live="polite">
+    <table>
+      <thead>
+        <tr><th>#</th><th>Carácter</th><th>Decimal</th><th>Unicode</th><th>Hex</th><th>UTF-8 (hex)</th><th>UTF-8 (binario)</th><th>Bytes</th></tr>
+      </thead>
+      <tbody>
+        {% for c in analisis %}
+        <tr{% if c.cantidad_bytes > 1 %} class="multibyte"{% endif %}>
+          <td>{{ forloop.counter }}</td>
+          <td class="car">{% if c.caracter == " " %}<small>espacio</small>{% else %}{{ c.representacion }}{% endif %}</td>
+          <td>{{ c.decimal }}</td>
+          <td>{{ c.punto_codigo }}</td>
+          <td>{{ c.hexadecimal }}</td>
+          <td>{{ c.bytes_utf8 }}</td>
+          <td>{{ c.bytes_utf8_binario }}</td>
+          <td class="nb">{{ c.cantidad_bytes }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <p class="nota">{{ analisis|length }} caracteres ocupan {{ total_bytes }} bytes en UTF-8. Los valores resaltados necesitan más de un byte.</p>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}
